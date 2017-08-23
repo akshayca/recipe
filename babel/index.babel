@@ -1,0 +1,199 @@
+// react bootstrap components 
+let { Accordion, Panel, Button, Modal, Form, FormGroup, FormControl, ControlLabel } = ReactBootstrap
+
+var initialRecipes = [{
+  name: "Spaghetti",
+  ingredients: ["pasta", "meatballs"],
+  img: "https://c2.staticflickr.com/6/5148/5685365844_8094b0b7cc.jpg",
+  directions: "boil water throw spaghetti in it."
+}, {
+  name: "Roast",
+  ingredients: ["meat"],
+  img: "https://c1.staticflickr.com/3/2487/4125840965_972935225e_z.jpg",
+  directions: "cook meat."
+}];
+// component delete recipe from array
+var DeleteButton = React.createClass({
+  deleteOnClick: function() {
+    var allRecipesClone = this.props.recipeList
+    allRecipesClone.splice(this.props.i, 1);
+    this.setState({
+      allRecipes: allRecipesClone
+    });
+    localStorage.allRecipes = JSON.stringify(allRecipesClone);
+  },
+  render: function() {
+    return <Button bsSize="small" bsStyle="danger" onClick={this.deleteOnClick}>Delete</Button>
+  }
+});
+
+// map and list ringredients
+var IngredientList = React.createClass({
+  render: function() {
+    return (
+      <ul>
+        {this.props.ingredients.map((ingredients, k) => {
+          return <li key={k}> {ingredients} </li>
+        })}
+      </ul>
+    )
+  }
+});
+
+var RecipeBox = React.createClass({
+  getInitialState: function() {
+    return {
+      allRecipes: [],
+      showEditModal: false,
+      showNewModal: false
+    };
+  }, // store in localStorage
+  componentDidMount: function() {
+    var storedRecipes = localStorage.allRecipes;
+    if (storedRecipes) {
+      this.setState({
+        allRecipes: JSON.parse(storedRecipes)
+      });
+    } else {
+      this.setState({
+        allRecipes: initialRecipes
+      });
+      localStorage.allRecipes = JSON.stringify(initialRecipes);
+    }
+  },
+  // delete button func
+  deleteOnClick: function(i) {
+    var allRecipesClone = this.state.allRecipes;
+    allRecipesClone.splice(i, 1);
+    this.setState({
+      allRecipes: allRecipesClone
+    });
+    localStorage.allRecipes = JSON.stringify(allRecipesClone);
+  },
+  // Modal for new recipe
+  closeNewModal(){
+    this.setState({showNewModal: false});
+  },
+  openNewModal(){
+    this.setState({showNewModal: true});
+  },
+  confirmNewModal(){
+    var newRecipe = {};
+    var allRecipesClone = this.state.allRecipes;
+    newRecipe.name = ReactDOM.findDOMNode(this.refs.newRecipeName).value;
+    newRecipe.ingredients = ReactDOM.findDOMNode(this.refs.newRecipeIngredients).value.trim().split(",");
+    newRecipe.img = ReactDOM.findDOMNode(this.refs.newRecipeImg).value;
+    newRecipe.directions = ReactDOM.findDOMNode(this.refs.newRecipeDirections).value;
+    allRecipesClone.push(newRecipe);
+    this.setState({
+      allRecipes: allRecipesClone,
+      showNewModal: false
+    });
+    localStorage.allRecipes = JSON.stringify(allRecipesClone);
+  },
+  // Modal for edit recipe
+  closeEditModal() {
+    this.setState({showEditModal: false});
+  },
+  openEditModal(i) {    
+    // display [i] list on EditModal    
+    this.setState({ 
+    showEditModal: true,
+    editName: this.state.allRecipes[i].name,
+    editIngredients: this.state.allRecipes[i].ingredients,
+    editImg: this.state.allRecipes[i].img,
+    editDirections: this.state.allRecipes[i].directions,
+    editIndex: i
+    })
+  },
+  editModal: function(i){
+    // get values from inputs on NewModal
+    var editedRecipeList = this.state.allRecipes;
+    editedRecipeList[i].name = ReactDOM.findDOMNode(this.refs.recipeName).value;
+    editedRecipeList[i].ingredients = ReactDOM.findDOMNode(this.refs.recipeIngredients).value.trim().split(",");
+    editedRecipeList[i].img = ReactDOM.findDOMNode(this.refs.recipeImg).value;
+    editedRecipeList[i].directions = ReactDOM.findDOMNode(this.refs.recipeDirections).value;
+    this.setState({
+      allRecipes: editedRecipeList,
+      showEditModal: false
+    });
+    localStorage.allRecipes = JSON.stringify(editedRecipeList);
+  },
+  
+  render: function() {
+    return (
+      <div className="box">
+      <div className="header">Recipe Book</div>{
+      this.state.allRecipes.map(function(recipe, i) {
+          return (
+            <Accordion>
+              <Panel className="list-item" header={recipe.name} key={i+1} eventKey={i+1}>
+                <img src={recipe.img} />INGREDIENTS<br />
+                <IngredientList ingredients={recipe.ingredients} />
+                <p>DIRECTIONS</p>
+                <h4>{recipe.directions}</h4>
+                
+                {/* delete button */}
+                <Button bsSize="small" bsStyle="danger" 
+                  onClick={this.deleteOnClick.bind(null,i)}>Delete</Button>
+                
+                {/* edit button */}
+                <Button bsSize="small" bsStyle="info" 
+                  onClick={this.openEditModal.bind(null,i)}>Edit</Button>
+                {/* edit modal screen */}
+                <Modal show={this.state.showEditModal} onHide={this.closeEditModal}>
+                  <Form>
+                    <FormGroup>
+                      <ControlLabel>Recipe Name</ControlLabel>
+                      <FormControl type="text" defaultValue={this.state.editName} ref="recipeName" />
+                      <br />
+                      <ControlLabel>Ingredients</ControlLabel>
+                      <FormControl type="text" defaultValue={this.state.editIngredients} ref="recipeIngredients" />
+                      <br />
+                      <ControlLabel>Image Url</ControlLabel>
+                      <FormControl type="text" defaultValue={this.state.editImg} ref="recipeImg" />
+                      <br />
+                      <ControlLabel>Directions</ControlLabel>
+                      <FormControl type="text" defaultValue={this.state.editDirections} ref="recipeDirections" />
+                    </FormGroup>
+                  </Form>                  
+                  <Button bsSize="medium" bsStyle="danger" 
+                  onClick={this.closeEditModal}>Close</Button>
+                  <Button bsSize="medium" bsStyle="primary" 
+                  onClick={this.editModal.bind(null,this.state.editIndex)}>Modify</Button>
+                </Modal>      
+                              
+              </Panel>
+            </Accordion>);
+        }.bind(this))
+      }<div className="footer">
+         <Button className="addRecipe" onClick={this.openNewModal.bind(null)} bsStyle="success">Add Recipe</Button>
+        {/* modal new recipe */}
+          <Modal show={this.state.showNewModal} onHide={this.closeNewModal}>
+            <Form>
+              <FormGroup>
+                <ControlLabel>Recipe Name</ControlLabel>
+                <FormControl type="text" ref="newRecipeName" placeholder="Be creative!" />
+                <br />
+                <ControlLabel>Ingredients</ControlLabel>
+                <FormControl type="text" ref="newRecipeIngredients" placeholder="ingredients separated by commas" />
+                <br />
+                <ControlLabel>Image Url</ControlLabel>
+                <FormControl type="text" ref="newRecipeImg" placeholder="www.myWebsite.com/myImage.jpg" />
+                <br />
+                <ControlLabel>Directions</ControlLabel>
+                <FormControl type="text" ref="newRecipeDirections" placeholder="How to" />
+              </FormGroup>
+            </Form>                  
+            <Button bsSize="medium" bsStyle="danger" 
+              onClick={this.closeNewModal}>Close</Button>
+            <Button bsSize="medium" bsStyle="primary" 
+              onClick={this.confirmNewModal.bind(null)}>Done</Button>
+          </Modal> 
+       </div>
+      </div>);
+  },
+});
+
+ReactDOM.render(<RecipeBox />,
+  document.getElementById('app'));
